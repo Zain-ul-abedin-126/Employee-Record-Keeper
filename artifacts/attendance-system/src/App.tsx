@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { initializeData, getSession, setSession, clearSession, AuthSession, getAdminPassword, setAdminPassword } from "@/lib/storage";
+import carrozaLogo from "@assets/image_1775295887823.png";
 import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Employees } from "@/pages/Employees";
@@ -18,23 +19,11 @@ const ADMIN_NAV: { id: AdminPage; label: string; icon: string }[] = [
 ];
 
 function CarrozaLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const iconSize = size === "sm" ? 24 : size === "md" ? 32 : 44;
-  const textSize = size === "sm" ? "text-sm" : size === "md" ? "text-lg" : "text-2xl";
+  const width = size === "sm" ? 110 : size === "md" ? 150 : 200;
   return (
-    <div className="flex items-center gap-2.5">
-      <svg width={iconSize} height={iconSize} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="48" height="48" rx="10" fill="#1e3a5f"/>
-        <path d="M8 28 Q14 20 24 20 Q34 20 40 28" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
-        <path d="M6 28 L42 28 Q42 34 36 34 L12 34 Q6 34 6 28Z" fill="#1e40af"/>
-        <path d="M14 28 L16 22 Q17 20 20 20 L28 20 Q31 20 32 22 L34 28" fill="#2563eb"/>
-        <circle cx="15" cy="34" r="3.5" fill="#93c5fd" stroke="#1e3a5f" strokeWidth="1"/>
-        <circle cx="33" cy="34" r="3.5" fill="#93c5fd" stroke="#1e3a5f" strokeWidth="1"/>
-        <rect x="20" y="22" width="8" height="5" rx="1" fill="#93c5fd" opacity="0.6"/>
-      </svg>
-      <div>
-        <div className={`font-black tracking-[0.15em] text-white uppercase ${textSize}`}>CARROZA</div>
-        {size !== "sm" && <div className="text-blue-400 text-[9px] tracking-[0.25em] uppercase -mt-0.5">Management System</div>}
-      </div>
+    <div className="flex flex-col items-start">
+      <img src={carrozaLogo} alt="CARROZA" style={{ width, filter: "brightness(1.1) drop-shadow(0 0 4px rgba(96,165,250,0.25))" }} className="object-contain" />
+      {size !== "sm" && <div className="text-blue-400 text-[9px] tracking-[0.25em] uppercase mt-0.5 pl-0.5">Attendance Management</div>}
     </div>
   );
 }

@@ -1,9 +1,14 @@
+export type AttendanceStatus = "present" | "late" | "halfDay" | "absent";
+export type EarlyExitFlag = "earlyExit" | "missingTimeout" | null;
+
 export interface Employee {
   id: string;
   name: string;
   department: string;
   designation: string;
   employeeId: string;
+  password: string;
+  status: "active" | "inactive";
 }
 
 export interface AttendanceRecord {
@@ -13,14 +18,22 @@ export interface AttendanceRecord {
   timeIn: string | null;
   timeOut: string | null;
   totalHours: number | null;
-  status: "present" | "late" | "absent";
+  status: AttendanceStatus;
+  flag: EarlyExitFlag;
+  note: string;
 }
 
-const EMPLOYEES_KEY = "ems_employees";
-const ATTENDANCE_KEY = "ems_attendance";
-const INITIALIZED_KEY = "ems_initialized";
+export interface AuthSession {
+  role: "admin" | "employee";
+  employeeId?: string;
+}
 
-function formatTime(date: Date): string {
+const EMPLOYEES_KEY = "carroza_employees";
+const ATTENDANCE_KEY = "carroza_attendance";
+const INITIALIZED_KEY = "carroza_initialized_v2";
+const ADMIN_PASSWORD_KEY = "carroza_admin_password";
+
+export function formatTime(date: Date): string {
   let hours = date.getHours();
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? "PM" : "AM";
@@ -29,22 +42,23 @@ function formatTime(date: Date): string {
   return `${hours}:${minutes.toString().padStart(2, "0")} ${ampm}`;
 }
 
-function formatDate(date: Date): string {
+export function formatDate(date: Date): string {
   const day = date.getDate().toString().padStart(2, "0");
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 }
 
-function parseTime12h(timeStr: string): { hours: number; minutes: number } {
-  const [timePart, ampm] = timeStr.split(" ");
-  let [hours, minutes] = timePart.split(":").map(Number);
+export function parseTime12h(timeStr: string): { hours: number; minutes: number } {
+  const parts = timeStr.trim().split(" ");
+  const ampm = parts[1];
+  let [hours, minutes] = parts[0].split(":").map(Number);
   if (ampm === "PM" && hours !== 12) hours += 12;
   if (ampm === "AM" && hours === 12) hours = 0;
   return { hours, minutes };
 }
 
-function calcHoursDiff(timeIn: string, timeOut: string): number {
+export function calcHoursDiff(timeIn: string, timeOut: string): number {
   const inTime = parseTime12h(timeIn);
   const outTime = parseTime12h(timeOut);
   const inMinutes = inTime.hours * 60 + inTime.minutes;
@@ -53,82 +67,89 @@ function calcHoursDiff(timeIn: string, timeOut: string): number {
   return diff > 0 ? Math.round((diff / 60) * 100) / 100 : 0;
 }
 
-function getStatus(timeIn: string): "present" | "late" {
+export function calcAttendanceStatus(timeIn: string): AttendanceStatus {
   const { hours, minutes } = parseTime12h(timeIn);
   const totalMinutes = hours * 60 + minutes;
-  const cutoff = 9 * 60 + 15;
-  return totalMinutes <= cutoff ? "present" : "late";
+  const onTimeCutoff = 10 * 60 + 30; // 10:30 AM
+  const halfDayCutoff = 11 * 60; // 11:00 AM
+  if (totalMinutes < onTimeCutoff) return "present";
+  if (totalMinutes < halfDayCutoff) return "late";
+  return "halfDay";
 }
 
-const DEMO_EMPLOYEES: Employee[] = [
-  { id: "1", name: "Ali Hassan", department: "HR", designation: "Manager", employeeId: "EMP001" },
-  { id: "2", name: "Sara Khan", department: "Finance", designation: "Accountant", employeeId: "EMP002" },
-  { id: "3", name: "Usman Malik", department: "IT", designation: "Developer", employeeId: "EMP003" },
-  { id: "4", name: "Ayesha Raza", department: "Admin", designation: "Coordinator", employeeId: "EMP004" },
-  { id: "5", name: "Bilal Ahmed", department: "Sales", designation: "Executive", employeeId: "EMP005" },
+export function calcEarlyExitFlag(timeOut: string | null): EarlyExitFlag {
+  if (!timeOut) return "missingTimeout";
+  const { hours, minutes } = parseTime12h(timeOut);
+  const totalMinutes = hours * 60 + minutes;
+  const standardOut = 19 * 60; // 7:00 PM
+  if (totalMinutes < standardOut) return "earlyExit";
+  return null;
+}
+
+const CARROZA_EMPLOYEES: Employee[] = [
+  { id: "1", name: "ZainUl Abedin", department: "IT", designation: "CSR & IT Executive", employeeId: "ZUA01", password: "123456", status: "active" },
+  { id: "2", name: "Syed Ali Naqi Mashadi", department: "Finance", designation: "Account Manager", employeeId: "SAN02", password: "123456", status: "active" },
+  { id: "3", name: "Salman Lashari", department: "Operations", designation: "Prep Incharge", employeeId: "SL03", password: "123456", status: "active" },
+  { id: "4", name: "Khan", department: "Operations", designation: "Prep Master", employeeId: "K04", password: "123456", status: "active" },
+  { id: "5", name: "Zain Bhatti", department: "Sales", designation: "Merchandiser", employeeId: "ZB05", password: "123456", status: "active" },
+  { id: "6", name: "Azeem", department: "Sales", designation: "Sales Man", employeeId: "AZ06", password: "123456", status: "active" },
 ];
 
 function generateDemoAttendance(employees: Employee[]): AttendanceRecord[] {
   const records: AttendanceRecord[] = [];
   const today = new Date();
 
-  for (let dayOffset = 6; dayOffset >= 1; dayOffset--) {
+  for (let dayOffset = 20; dayOffset >= 1; dayOffset--) {
     const date = new Date(today);
     date.setDate(today.getDate() - dayOffset);
     const dayOfWeek = date.getDay();
     if (dayOfWeek === 0 || dayOfWeek === 6) continue;
-
     const dateStr = formatDate(date);
 
     employees.forEach((emp, idx) => {
-      const shouldBeAbsent = Math.random() < 0.1;
-      if (shouldBeAbsent) {
-        records.push({
-          id: `${emp.id}-${dateStr}`,
-          employeeId: emp.employeeId,
-          date: dateStr,
-          timeIn: null,
-          timeOut: null,
-          totalHours: null,
-          status: "absent",
-        });
+      const rng = Math.random();
+      if (rng < 0.08) {
+        records.push({ id: `${emp.employeeId}-${dateStr}`, employeeId: emp.employeeId, date: dateStr, timeIn: null, timeOut: null, totalHours: null, status: "absent", flag: null, note: "" });
         return;
       }
+      let inHour: number, inMin: number;
+      if (idx % 3 === 0 && dayOffset % 3 === 0) { inHour = 11; inMin = Math.floor(Math.random() * 30); }
+      else if (idx % 2 === 0 && dayOffset % 2 === 0) { inHour = 10; inMin = 30 + Math.floor(Math.random() * 29); }
+      else { inHour = 8 + Math.floor(Math.random() * 2); inMin = Math.floor(Math.random() * 59); }
 
-      const isLate = idx === 2 && dayOffset % 2 === 0;
-      const inHour = isLate ? 9 : 8 + Math.floor(Math.random() * 1);
-      const inMin = isLate ? 20 + Math.floor(Math.random() * 20) : Math.floor(Math.random() * 15);
       const inDate = new Date(date);
       inDate.setHours(inHour, inMin, 0, 0);
       const timeIn = formatTime(inDate);
+      const status = calcAttendanceStatus(timeIn);
 
-      const outHour = 17 + Math.floor(Math.random() * 2);
-      const outMin = Math.floor(Math.random() * 60);
+      const outHour = 18 + Math.floor(Math.random() * 3);
+      const outMin = Math.floor(Math.random() * 59);
       const outDate = new Date(date);
       outDate.setHours(outHour, outMin, 0, 0);
       const timeOut = formatTime(outDate);
+      const flag = calcEarlyExitFlag(timeOut);
 
-      records.push({
-        id: `${emp.id}-${dateStr}`,
-        employeeId: emp.employeeId,
-        date: dateStr,
-        timeIn,
-        timeOut,
-        totalHours: calcHoursDiff(timeIn, timeOut),
-        status: getStatus(timeIn),
-      });
+      records.push({ id: `${emp.employeeId}-${dateStr}`, employeeId: emp.employeeId, date: dateStr, timeIn, timeOut, totalHours: calcHoursDiff(timeIn, timeOut), status, flag, note: "" });
     });
   }
-
   return records;
 }
 
 export function initializeData(): void {
   if (localStorage.getItem(INITIALIZED_KEY)) return;
-  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(DEMO_EMPLOYEES));
-  const attendance = generateDemoAttendance(DEMO_EMPLOYEES);
+  localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(CARROZA_EMPLOYEES));
+  const attendance = generateDemoAttendance(CARROZA_EMPLOYEES);
   localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(attendance));
+  localStorage.setItem(ADMIN_PASSWORD_KEY, "admin123");
   localStorage.setItem(INITIALIZED_KEY, "true");
+}
+
+export function getAdminPassword(): string {
+  return localStorage.getItem(ADMIN_PASSWORD_KEY) || "admin123";
+}
+
+export function setAdminPassword(pwd: string): void {
+  localStorage.setItem(ADMIN_PASSWORD_KEY, pwd);
 }
 
 export function getEmployees(): Employee[] {
@@ -151,15 +172,11 @@ export function addEmployee(emp: Omit<Employee, "id">): Employee {
 export function updateEmployee(updated: Employee): void {
   const employees = getEmployees();
   const idx = employees.findIndex((e) => e.id === updated.id);
-  if (idx !== -1) {
-    employees[idx] = updated;
-    saveEmployees(employees);
-  }
+  if (idx !== -1) { employees[idx] = updated; saveEmployees(employees); }
 }
 
 export function deleteEmployee(id: string): void {
-  const employees = getEmployees().filter((e) => e.id !== id);
-  saveEmployees(employees);
+  saveEmployees(getEmployees().filter((e) => e.id !== id));
 }
 
 export function getAttendance(): AttendanceRecord[] {
@@ -173,109 +190,101 @@ export function saveAttendance(records: AttendanceRecord[]): void {
 
 export function getTodayRecord(employeeId: string): AttendanceRecord | null {
   const today = formatDate(new Date());
-  const records = getAttendance();
-  return records.find((r) => r.employeeId === employeeId && r.date === today) || null;
+  return getAttendance().find((r) => r.employeeId === employeeId && r.date === today) || null;
 }
 
-export function timeIn(employeeId: string): AttendanceRecord {
+export function doTimeIn(employeeId: string): AttendanceRecord {
   const now = new Date();
   const timeStr = formatTime(now);
   const dateStr = formatDate(now);
-
   const records = getAttendance();
   const existing = records.find((r) => r.employeeId === employeeId && r.date === dateStr);
   if (existing) return existing;
-
   const record: AttendanceRecord = {
     id: `${employeeId}-${dateStr}`,
-    employeeId,
-    date: dateStr,
-    timeIn: timeStr,
-    timeOut: null,
-    totalHours: null,
-    status: getStatus(timeStr),
+    employeeId, date: dateStr, timeIn: timeStr, timeOut: null,
+    totalHours: null, status: calcAttendanceStatus(timeStr), flag: "missingTimeout", note: "",
   };
-
   records.push(record);
   saveAttendance(records);
   return record;
 }
 
-export function timeOut(employeeId: string): AttendanceRecord | null {
+export function doTimeOut(employeeId: string): AttendanceRecord | null {
   const today = formatDate(new Date());
-  const now = new Date();
-  const timeStr = formatTime(now);
+  const timeStr = formatTime(new Date());
   const records = getAttendance();
   const idx = records.findIndex((r) => r.employeeId === employeeId && r.date === today);
-
   if (idx === -1) return null;
-
   const record = records[idx];
   if (!record.timeIn) return null;
-
-  records[idx] = {
-    ...record,
-    timeOut: timeStr,
-    totalHours: calcHoursDiff(record.timeIn, timeStr),
-  };
+  records[idx] = { ...record, timeOut: timeStr, totalHours: calcHoursDiff(record.timeIn, timeStr), flag: calcEarlyExitFlag(timeStr) };
   saveAttendance(records);
   return records[idx];
 }
 
+export function updateAttendanceRecord(record: AttendanceRecord): void {
+  const records = getAttendance();
+  const idx = records.findIndex((r) => r.id === record.id);
+  if (idx !== -1) { records[idx] = record; saveAttendance(records); }
+  else { records.push(record); saveAttendance(records); }
+}
+
 export function getTodayStats() {
-  const employees = getEmployees();
+  const employees = getEmployees().filter((e) => e.status === "active");
   const today = formatDate(new Date());
   const records = getAttendance().filter((r) => r.date === today);
-
   const present = records.filter((r) => r.status === "present").length;
   const late = records.filter((r) => r.status === "late").length;
+  const halfDay = records.filter((r) => r.status === "halfDay").length;
   const checkedIn = records.filter((r) => r.timeIn && !r.timeOut).length;
-  const absent = employees.length - present - late;
-
-  return {
-    total: employees.length,
-    present,
-    late,
-    absent: Math.max(0, absent),
-    currentlyIn: checkedIn,
-  };
+  const totalChecked = present + late + halfDay;
+  const absent = Math.max(0, employees.length - totalChecked);
+  return { total: employees.length, present, late, halfDay, absent, currentlyIn: checkedIn };
 }
 
 export function getCurrentlyIn(): Array<{ employee: Employee; record: AttendanceRecord }> {
   const today = formatDate(new Date());
   const employees = getEmployees();
   const records = getAttendance().filter((r) => r.date === today && r.timeIn && !r.timeOut);
-
-  return records.map((r) => ({
-    employee: employees.find((e) => e.employeeId === r.employeeId)!,
-    record: r,
-  })).filter((x) => x.employee);
+  return records.map((r) => ({ employee: employees.find((e) => e.employeeId === r.employeeId)!, record: r })).filter((x) => x.employee);
 }
 
 export function exportToCSV(records: AttendanceRecord[], employees: Employee[]): void {
-  const headers = ["Employee Name", "Employee ID", "Department", "Date", "Time In", "Time Out", "Total Hours", "Status"];
+  const headers = ["Employee Name", "Employee ID", "Department", "Date", "Time In", "Time Out", "Total Hours", "Status", "Flag", "Note"];
   const rows = records.map((r) => {
     const emp = employees.find((e) => e.employeeId === r.employeeId);
-    return [
-      emp?.name || "Unknown",
-      r.employeeId,
-      emp?.department || "",
-      r.date,
-      r.timeIn || "-",
-      r.timeOut || "-",
-      r.totalHours !== null ? r.totalHours.toFixed(2) : "-",
-      r.status,
-    ];
+    return [emp?.name || "Unknown", r.employeeId, emp?.department || "", r.date, r.timeIn || "-", r.timeOut || "-", r.totalHours !== null ? r.totalHours.toFixed(2) : "-", r.status, r.flag || "-", r.note || ""];
   });
-
   const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n");
   const blob = new Blob([csvContent], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "attendance_records.csv";
+  a.download = "carroza_attendance.csv";
   a.click();
   URL.revokeObjectURL(url);
 }
 
-export { formatDate, formatTime };
+export function getSession(): AuthSession | null {
+  const data = sessionStorage.getItem("carroza_session");
+  return data ? JSON.parse(data) : null;
+}
+
+export function setSession(session: AuthSession): void {
+  sessionStorage.setItem("carroza_session", JSON.stringify(session));
+}
+
+export function clearSession(): void {
+  sessionStorage.removeItem("carroza_session");
+}
+
+export function loginAdmin(password: string): boolean {
+  return password === getAdminPassword();
+}
+
+export function loginEmployee(employeeId: string, password: string): Employee | null {
+  const employees = getEmployees();
+  const emp = employees.find((e) => e.employeeId === employeeId && e.password === password && e.status === "active");
+  return emp || null;
+}

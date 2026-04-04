@@ -1,177 +1,144 @@
 import { useState, useEffect } from "react";
-import { initializeData } from "@/lib/storage";
-import { Kiosk } from "@/pages/Kiosk";
+import { initializeData, getSession, setSession, clearSession, AuthSession, getAdminPassword, setAdminPassword } from "@/lib/storage";
+import { Login } from "@/pages/Login";
 import { Dashboard } from "@/pages/Dashboard";
 import { Employees } from "@/pages/Employees";
 import { AttendanceLog } from "@/pages/AttendanceLog";
 import { Reports } from "@/pages/Reports";
-import { AdminLogin } from "@/pages/AdminLogin";
+import { EmployeePanel } from "@/pages/EmployeePanel";
 
-type Page = "kiosk" | "dashboard" | "employees" | "attendance" | "reports";
+type AdminPage = "dashboard" | "employees" | "attendance" | "reports" | "settings";
 
-const NAV_ITEMS: { id: Page; label: string; icon: string; adminOnly?: boolean }[] = [
-  { id: "kiosk", label: "Kiosk", icon: "🖥" },
-  { id: "dashboard", label: "Dashboard", icon: "📊", adminOnly: true },
-  { id: "employees", label: "Employees", icon: "👥", adminOnly: true },
-  { id: "attendance", label: "Attendance Log", icon: "📋", adminOnly: true },
-  { id: "reports", label: "Reports", icon: "📅", adminOnly: true },
+const ADMIN_NAV: { id: AdminPage; label: string; icon: string }[] = [
+  { id: "dashboard", label: "Dashboard", icon: "📊" },
+  { id: "employees", label: "Employees", icon: "👥" },
+  { id: "attendance", label: "Attendance Log", icon: "📋" },
+  { id: "reports", label: "Monthly Report", icon: "📅" },
+  { id: "settings", label: "Settings", icon: "⚙️" },
 ];
 
-function App() {
-  const [currentPage, setCurrentPage] = useState<Page>("kiosk");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
-  const [pendingPage, setPendingPage] = useState<Page | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    initializeData();
-    const auth = sessionStorage.getItem("admin_authenticated") === "true";
-    setIsAuthenticated(auth);
-  }, []);
-
-  const handleNavClick = (page: Page) => {
-    const item = NAV_ITEMS.find((n) => n.id === page);
-    if (item?.adminOnly && !isAuthenticated) {
-      setPendingPage(page);
-      setShowLoginPrompt(true);
-    } else {
-      setCurrentPage(page);
-    }
-    setSidebarOpen(false);
-  };
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    setShowLoginPrompt(false);
-    if (pendingPage) {
-      setCurrentPage(pendingPage);
-      setPendingPage(null);
-    }
-  };
-
-  const handleLogout = () => {
-    sessionStorage.removeItem("admin_authenticated");
-    setIsAuthenticated(false);
-    setCurrentPage("kiosk");
-  };
-
-  if (showLoginPrompt) {
-    return <AdminLogin onLogin={handleLogin} />;
-  }
-
-  if (currentPage === "kiosk") {
-    return (
+function CarrozaLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const iconSize = size === "sm" ? 24 : size === "md" ? 32 : 44;
+  const textSize = size === "sm" ? "text-sm" : size === "md" ? "text-lg" : "text-2xl";
+  return (
+    <div className="flex items-center gap-2.5">
+      <svg width={iconSize} height={iconSize} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="10" fill="#1e3a5f"/>
+        <path d="M8 28 Q14 20 24 20 Q34 20 40 28" stroke="#60a5fa" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+        <path d="M6 28 L42 28 Q42 34 36 34 L12 34 Q6 34 6 28Z" fill="#1e40af"/>
+        <path d="M14 28 L16 22 Q17 20 20 20 L28 20 Q31 20 32 22 L34 28" fill="#2563eb"/>
+        <circle cx="15" cy="34" r="3.5" fill="#93c5fd" stroke="#1e3a5f" strokeWidth="1"/>
+        <circle cx="33" cy="34" r="3.5" fill="#93c5fd" stroke="#1e3a5f" strokeWidth="1"/>
+        <rect x="20" y="22" width="8" height="5" rx="1" fill="#93c5fd" opacity="0.6"/>
+      </svg>
       <div>
-        <div className="fixed top-4 left-4 z-50 flex items-center gap-2">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm rounded-lg text-white transition-colors"
-            title="Open menu"
-          >
-            ☰
-          </button>
-          {isAuthenticated && (
-            <span className="text-white/60 text-xs bg-blue-500/20 border border-blue-500/30 px-2 py-1 rounded">Admin</span>
-          )}
-        </div>
-
-        {sidebarOpen && (
-          <>
-            <div className="fixed inset-0 bg-black/60 z-40" onClick={() => setSidebarOpen(false)} />
-            <div className="fixed left-0 top-0 h-full w-64 bg-slate-900 border-r border-slate-700 z-50 flex flex-col">
-              <div className="p-6 border-b border-slate-700">
-                <h1 className="text-lg font-bold text-white">EMS</h1>
-                <p className="text-slate-400 text-xs mt-0.5">Attendance System</p>
-              </div>
-              <nav className="flex-1 p-4 space-y-1">
-                {NAV_ITEMS.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.id)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-700 transition-colors text-left"
-                  >
-                    <span>{item.icon}</span>
-                    <span className="text-sm font-medium">{item.label}</span>
-                    {item.adminOnly && !isAuthenticated && (
-                      <span className="ml-auto text-slate-500 text-xs">🔒</span>
-                    )}
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </>
-        )}
-
-        <Kiosk />
+        <div className={`font-black tracking-[0.15em] text-white uppercase ${textSize}`}>CARROZA</div>
+        {size !== "sm" && <div className="text-blue-400 text-[9px] tracking-[0.25em] uppercase -mt-0.5">Management System</div>}
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+function AdminSettings() {
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [msg, setMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+
+  const handleChange = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentPwd !== getAdminPassword()) { setMsg({ text: "Current password is incorrect.", type: "error" }); return; }
+    if (newPwd.length < 6) { setMsg({ text: "New password must be at least 6 characters.", type: "error" }); return; }
+    if (newPwd !== confirmPwd) { setMsg({ text: "Passwords do not match.", type: "error" }); return; }
+    setAdminPassword(newPwd);
+    setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+    setMsg({ text: "Admin password changed successfully.", type: "success" });
+    setTimeout(() => setMsg(null), 3000);
+  };
 
   return (
-    <div className="flex min-h-screen bg-slate-900">
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 border-r border-slate-700 flex flex-col transform transition-transform duration-200 lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-6 border-b border-slate-700">
-          <h1 className="text-lg font-bold text-white">EMS</h1>
-          <p className="text-slate-400 text-xs mt-0.5">Employee Attendance System</p>
-          {isAuthenticated && (
-            <span className="inline-block mt-2 text-xs text-blue-300 bg-blue-500/20 border border-blue-500/30 px-2 py-0.5 rounded">
-              Admin Mode
-            </span>
-          )}
+    <div className="p-6 max-w-lg">
+      <h1 className="text-2xl font-bold text-white mb-1">Settings</h1>
+      <p className="text-slate-400 text-sm mb-6">Manage admin password</p>
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+        <h2 className="text-white font-bold text-lg mb-4">Change Admin Password</h2>
+        {msg && <div className={`mb-4 p-3 rounded-lg text-sm ${msg.type === "success" ? "bg-green-500/15 border border-green-500/30 text-green-300" : "bg-red-500/15 border border-red-500/30 text-red-300"}`}>{msg.text}</div>}
+        <form onSubmit={handleChange} className="space-y-4">
+          <div>
+            <label className="block text-slate-300 text-sm font-medium mb-1.5">Current Password</label>
+            <input type="password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+          </div>
+          <div>
+            <label className="block text-slate-300 text-sm font-medium mb-1.5">New Password</label>
+            <input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Min. 6 characters" className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm placeholder-slate-500" />
+          </div>
+          <div>
+            <label className="block text-slate-300 text-sm font-medium mb-1.5">Confirm New Password</label>
+            <input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+          </div>
+          <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm transition-colors">Update Password</button>
+        </form>
+        <div className="mt-4 pt-4 border-t border-slate-700 text-slate-500 text-xs">
+          Admin password is never displayed anywhere in the system.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminLayout({ onLogout }: { onLogout: () => void }) {
+  const [currentPage, setCurrentPage] = useState<AdminPage>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="flex min-h-screen bg-[#0a0f1e]">
+      {/* Sidebar */}
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-slate-700/60 flex flex-col transform transition-transform duration-200 lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-5 border-b border-slate-700/60">
+          <CarrozaLogo size="sm" />
+          <div className="mt-3 px-1">
+            <span className="text-xs text-amber-400 bg-amber-500/15 border border-amber-500/25 px-2 py-0.5 rounded-full font-semibold">Admin Mode</span>
+          </div>
         </div>
 
         <nav className="flex-1 p-4 space-y-1">
-          {NAV_ITEMS.map((item) => (
+          {ADMIN_NAV.map((item) => (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors text-left ${
+              onClick={() => { setCurrentPage(item.id); setSidebarOpen(false); }}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left text-sm transition-all ${
                 currentPage === item.id
-                  ? "bg-blue-500 text-white"
-                  : "text-slate-300 hover:text-white hover:bg-slate-700"
+                  ? "bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/20"
+                  : "text-slate-400 hover:text-white hover:bg-slate-700/60"
               }`}
             >
-              <span>{item.icon}</span>
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-base">{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-700 space-y-2">
-          {isAuthenticated && (
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm"
-            >
-              <span>🚪</span>
-              <span>Logout Admin</span>
-            </button>
-          )}
-          <div className="text-slate-600 text-xs text-center">
-            Employee Attendance System v1.0
-          </div>
+        <div className="p-4 border-t border-slate-700/60">
+          <button
+            onClick={onLogout}
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm"
+          >
+            <span>🚪</span>
+            <span>Logout</span>
+          </button>
+          <div className="text-slate-700 text-[10px] text-center mt-3">CARROZA v2.0 · Admin</div>
         </div>
       </aside>
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/70 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="sticky top-0 z-30 bg-slate-800 border-b border-slate-700 px-4 py-3 flex items-center gap-3 lg:hidden">
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors"
-          >
+        {/* Mobile header */}
+        <header className="sticky top-0 z-30 bg-[#0f172a] border-b border-slate-700/60 px-4 py-3 flex items-center gap-3 lg:hidden">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors">
             ☰
           </button>
-          <span className="text-white font-semibold">
-            {NAV_ITEMS.find((n) => n.id === currentPage)?.label}
-          </span>
+          <CarrozaLogo size="sm" />
         </header>
 
         <main className="flex-1 overflow-auto">
@@ -179,10 +146,55 @@ function App() {
           {currentPage === "employees" && <Employees />}
           {currentPage === "attendance" && <AttendanceLog />}
           {currentPage === "reports" && <Reports />}
+          {currentPage === "settings" && <AdminSettings />}
         </main>
       </div>
     </div>
   );
+}
+
+function App() {
+  const [session, setSessionState] = useState<AuthSession | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    initializeData();
+    const existing = getSession();
+    setSessionState(existing);
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (s: AuthSession) => {
+    setSession(s);
+    setSessionState(s);
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setSessionState(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
+        <div className="text-slate-400 text-sm">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login onLogin={handleLogin} />;
+  }
+
+  if (session.role === "admin") {
+    return <AdminLayout onLogout={handleLogout} />;
+  }
+
+  if (session.role === "employee" && session.employeeId) {
+    return <EmployeePanel employeeId={session.employeeId} onLogout={handleLogout} />;
+  }
+
+  return <Login onLogin={handleLogin} />;
 }
 
 export default App;

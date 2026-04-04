@@ -1,179 +1,266 @@
 import { useState, useMemo } from "react";
-import { getAttendance, getEmployees, exportToCSV } from "@/lib/storage";
+import { getAttendance, getEmployees, exportToCSV, updateAttendanceRecord, saveAttendance, AttendanceRecord, Employee, calcAttendanceStatus, calcEarlyExitFlag, calcHoursDiff } from "@/lib/storage";
 
-const DEPARTMENTS = ["All", "HR", "Finance", "IT", "Admin", "Sales", "Marketing", "Operations", "Legal"];
-const STATUSES = ["All", "present", "late", "absent"];
+function StatusBadge({ status }: { status: string }) {
+  if (status === "present") return <span className="bg-green-500/20 border border-green-500/30 text-green-300 text-xs px-2 py-0.5 rounded-full">On Time</span>;
+  if (status === "late") return <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs px-2 py-0.5 rounded-full">Late</span>;
+  if (status === "halfDay") return <span className="bg-red-500/20 border border-red-500/30 text-red-300 text-xs px-2 py-0.5 rounded-full">Half Day</span>;
+  if (status === "absent") return <span className="bg-slate-500/20 border border-slate-500/30 text-slate-400 text-xs px-2 py-0.5 rounded-full">Absent</span>;
+  return null;
+}
+
+function FlagBadge({ flag }: { flag?: string | null }) {
+  if (flag === "earlyExit") return <span className="bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs px-1.5 py-0.5 rounded-full">Early Exit</span>;
+  if (flag === "missingTimeout") return <span className="bg-red-400/20 border border-red-400/30 text-red-300 text-xs px-1.5 py-0.5 rounded-full">Missing T/O</span>;
+  return null;
+}
+
+interface EditModalProps {
+  record: AttendanceRecord;
+  employee: Employee | undefined;
+  onSave: (updated: AttendanceRecord) => void;
+  onCancel: () => void;
+}
+
+function EditModal({ record, employee, onSave, onCancel }: EditModalProps) {
+  const [form, setForm] = useState({
+    timeIn: record.timeIn || "",
+    timeOut: record.timeOut || "",
+    status: record.status,
+    note: record.note || "",
+  });
+
+  const handleSave = () => {
+    const updatedStatus = form.timeIn ? calcAttendanceStatus(form.timeIn) : "absent";
+    const updatedFlag = form.timeIn ? calcEarlyExitFlag(form.timeOut || null) : null;
+    const updatedHours = (form.timeIn && form.timeOut) ? calcHoursDiff(form.timeIn, form.timeOut) : null;
+    onSave({
+      ...record,
+      timeIn: form.timeIn || null,
+      timeOut: form.timeOut || null,
+      status: form.status !== record.status ? form.status : updatedStatus,
+      flag: updatedFlag,
+      totalHours: updatedHours,
+      note: form.note,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <h3 className="text-white font-bold text-lg mb-1">Edit Attendance Record</h3>
+        <p className="text-slate-400 text-sm mb-5">{employee?.name} · {record.date}</p>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-slate-400 text-xs font-medium mb-1">Time In (e.g. 9:30 AM)</label>
+              <input type="text" value={form.timeIn} onChange={(e) => setForm({ ...form, timeIn: e.target.value })} placeholder="9:00 AM" className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+            </div>
+            <div>
+              <label className="block text-slate-400 text-xs font-medium mb-1">Time Out (e.g. 7:00 PM)</label>
+              <input type="text" value={form.timeOut} onChange={(e) => setForm({ ...form, timeOut: e.target.value })} placeholder="7:00 PM" className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-slate-400 text-xs font-medium mb-1">Override Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as AttendanceRecord["status"] })} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="present">On Time (Present)</option>
+              <option value="late">Late</option>
+              <option value="halfDay">Half Day</option>
+              <option value="absent">Absent</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-slate-400 text-xs font-medium mb-1">Admin Note</label>
+            <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Optional note..." className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onCancel} className="flex-1 py-2.5 border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const STATUSES = ["All", "present", "late", "halfDay", "absent"];
+const STATUS_LABELS: Record<string, string> = { All: "All Statuses", present: "On Time", late: "Late", halfDay: "Half Day", absent: "Absent" };
 
 export function AttendanceLog() {
   const [employees] = useState(getEmployees);
-  const [attendance] = useState(getAttendance);
-
+  const [attendance, setAttendance] = useState(getAttendance);
   const [filterDate, setFilterDate] = useState("");
   const [filterEmployee, setFilterEmployee] = useState("All");
-  const [filterDepartment, setFilterDepartment] = useState("All");
   const [filterStatus, setFilterStatus] = useState("All");
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  const showToast = (msg: string, type: "success" | "error" = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const refresh = () => setAttendance(getAttendance());
 
   const filtered = useMemo(() => {
     return attendance.filter((r) => {
       const emp = employees.find((e) => e.employeeId === r.employeeId);
       if (!emp) return false;
-
       if (filterDate) {
         const [year, month, day] = filterDate.split("-");
-        const dateStr = `${day}/${month}/${year}`;
-        if (r.date !== dateStr) return false;
+        if (r.date !== `${day}/${month}/${year}`) return false;
       }
-
       if (filterEmployee !== "All" && r.employeeId !== filterEmployee) return false;
-      if (filterDepartment !== "All" && emp.department !== filterDepartment) return false;
       if (filterStatus !== "All" && r.status !== filterStatus) return false;
-
       return true;
     }).sort((a, b) => {
       const [da, ma, ya] = a.date.split("/");
       const [db, mb, yb] = b.date.split("/");
-      const dateA = new Date(`${ya}-${ma}-${da}`);
-      const dateB = new Date(`${yb}-${mb}-${db}`);
-      return dateB.getTime() - dateA.getTime();
+      return new Date(`${yb}-${mb}-${db}`).getTime() - new Date(`${ya}-${ma}-${da}`).getTime();
     });
-  }, [attendance, employees, filterDate, filterEmployee, filterDepartment, filterStatus]);
+  }, [attendance, employees, filterDate, filterEmployee, filterStatus]);
 
-  const statusBadge = (status: string) => {
-    if (status === "present") return <span className="bg-green-500/20 border border-green-500/30 text-green-300 text-xs px-2 py-0.5 rounded-full">Present</span>;
-    if (status === "late") return <span className="bg-yellow-500/20 border border-yellow-500/30 text-yellow-300 text-xs px-2 py-0.5 rounded-full">Late</span>;
-    return <span className="bg-red-500/20 border border-red-500/30 text-red-300 text-xs px-2 py-0.5 rounded-full">Absent</span>;
+  const handleMarkAbsent = (employeeId: string) => {
+    const today = new Date();
+    const day = today.getDate().toString().padStart(2, "0");
+    const month = (today.getMonth() + 1).toString().padStart(2, "0");
+    const year = today.getFullYear();
+    const dateStr = `${day}/${month}/${year}`;
+    const id = `${employeeId}-${dateStr}`;
+    const records = getAttendance();
+    const existing = records.find((r) => r.id === id);
+    if (existing) { showToast("Record already exists for today.", "error"); return; }
+    updateAttendanceRecord({ id, employeeId, date: dateStr, timeIn: null, timeOut: null, totalHours: null, status: "absent", flag: null, note: "Marked absent by admin" });
+    refresh();
+    showToast("Marked as absent.");
   };
 
-  const clearFilters = () => {
-    setFilterDate("");
-    setFilterEmployee("All");
-    setFilterDepartment("All");
-    setFilterStatus("All");
-  };
-
-  const handleExport = () => {
-    exportToCSV(filtered, employees);
+  const handleSaveEdit = (updated: AttendanceRecord) => {
+    updateAttendanceRecord(updated);
+    refresh();
+    setEditingRecord(null);
+    showToast("Record updated successfully!");
   };
 
   return (
     <div className="p-6 space-y-6">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl text-white text-sm font-medium shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+          {toast.msg}
+        </div>
+      )}
+
+      {editingRecord && (
+        <EditModal
+          record={editingRecord}
+          employee={employees.find((e) => e.employeeId === editingRecord.employeeId)}
+          onSave={handleSaveEdit}
+          onCancel={() => setEditingRecord(null)}
+        />
+      )}
+
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Attendance Log</h1>
-          <p className="text-slate-400 text-sm mt-1">{filtered.length} records found</p>
+          <p className="text-slate-400 text-sm mt-0.5">{filtered.length} records</p>
         </div>
-        <button
-          onClick={handleExport}
-          className="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
-        >
-          Export CSV
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => exportToCSV(filtered, employees)}
+            className="px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm transition-colors"
+          >
+            Export CSV
+          </button>
+        </div>
       </div>
 
+      {/* Filters */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label className="block text-slate-400 text-xs font-medium mb-1.5">Date</label>
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            />
+            <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
           </div>
           <div>
             <label className="block text-slate-400 text-xs font-medium mb-1.5">Employee</label>
-            <select
-              value={filterEmployee}
-              onChange={(e) => setFilterEmployee(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
+            <select value={filterEmployee} onChange={(e) => setFilterEmployee(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
               <option value="All">All Employees</option>
-              {employees.map((e) => (
-                <option key={e.id} value={e.employeeId}>{e.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1.5">Department</label>
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>{d === "All" ? "All Departments" : d}</option>
-              ))}
+              {employees.map((e) => <option key={e.id} value={e.employeeId}>{e.name}</option>)}
             </select>
           </div>
           <div>
             <label className="block text-slate-400 text-xs font-medium mb-1.5">Status</label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>{s === "All" ? "All Statuses" : s.charAt(0).toUpperCase() + s.slice(1)}</option>
-              ))}
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
           </div>
+          <div className="flex items-end">
+            <button onClick={() => { setFilterDate(""); setFilterEmployee("All"); setFilterStatus("All"); }} className="w-full py-2 border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg text-sm transition-colors">Clear Filters</button>
+          </div>
         </div>
-        <button
-          onClick={clearFilters}
-          className="mt-3 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          Clear Filters
-        </button>
       </div>
 
+      {/* Mark Absent */}
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+        <h3 className="text-slate-300 text-sm font-semibold mb-3">Mark Absent Today</h3>
+        <div className="flex flex-wrap gap-2">
+          {employees.filter((e) => e.status === "active").map((emp) => (
+            <button key={emp.id} onClick={() => handleMarkAbsent(emp.employeeId)} className="px-3 py-1.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg text-xs transition-colors">
+              {emp.name} ({emp.employeeId})
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Table */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-700/50 text-slate-300 text-sm">
+              <tr className="bg-slate-700/30 text-slate-400 text-xs">
                 <th className="px-4 py-3 text-left font-medium">Employee</th>
-                <th className="px-4 py-3 text-left font-medium">Department</th>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Time In</th>
                 <th className="px-4 py-3 text-left font-medium">Time Out</th>
-                <th className="px-4 py-3 text-left font-medium">Total Hours</th>
+                <th className="px-4 py-3 text-left font-medium">Hours</th>
                 <th className="px-4 py-3 text-left font-medium">Status</th>
+                <th className="px-4 py-3 text-left font-medium">Flag</th>
+                <th className="px-4 py-3 text-left font-medium">Note</th>
+                <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700">
+            <tbody className="divide-y divide-slate-700/50">
               {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
-                    No attendance records found
-                  </td>
-                </tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-500">No records found</td></tr>
               ) : (
                 filtered.map((record) => {
                   const emp = employees.find((e) => e.employeeId === record.employeeId);
                   return (
-                    <tr key={record.id} className="hover:bg-slate-700/30 transition-colors">
+                    <tr key={record.id} className="hover:bg-slate-700/20 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                            {emp?.name.split(" ").map((n) => n[0]).join("").slice(0, 2) || "?"}
+                          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                            {emp?.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
                           </div>
                           <div>
-                            <div className="text-white text-sm font-medium">{emp?.name || "Unknown"}</div>
-                            <div className="text-slate-400 text-xs">{record.employeeId}</div>
+                            <div className="text-white text-xs font-medium">{emp?.name || "Unknown"}</div>
+                            <div className="text-slate-500 text-xs">{record.employeeId}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="text-slate-300 text-sm">{emp?.department}</span>
+                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{record.date}</td>
+                      <td className="px-4 py-3 text-white text-sm">{record.timeIn || <span className="text-slate-500">-</span>}</td>
+                      <td className="px-4 py-3 text-white text-sm">{record.timeOut || <span className="text-slate-500">-</span>}</td>
+                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{record.totalHours !== null ? `${record.totalHours.toFixed(1)}h` : "-"}</td>
+                      <td className="px-4 py-3"><StatusBadge status={record.status} /></td>
+                      <td className="px-4 py-3"><FlagBadge flag={record.flag} /></td>
+                      <td className="px-4 py-3 text-slate-500 text-xs max-w-[120px] truncate">{record.note || "-"}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={() => setEditingRecord(record)} className="px-2.5 py-1 border border-slate-600 text-slate-300 hover:bg-slate-700 text-xs rounded-lg transition-colors">Edit</button>
                       </td>
-                      <td className="px-4 py-3 text-slate-300 text-sm font-mono">{record.date}</td>
-                      <td className="px-4 py-3 text-slate-300 text-sm">{record.timeIn || "-"}</td>
-                      <td className="px-4 py-3 text-slate-300 text-sm">{record.timeOut || "-"}</td>
-                      <td className="px-4 py-3 text-slate-300 text-sm font-mono">
-                        {record.totalHours !== null ? `${record.totalHours.toFixed(2)}h` : "-"}
-                      </td>
-                      <td className="px-4 py-3">{statusBadge(record.status)}</td>
                     </tr>
                   );
                 })

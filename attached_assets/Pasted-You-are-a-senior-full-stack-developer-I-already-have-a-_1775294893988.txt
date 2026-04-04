@@ -1,0 +1,111 @@
+You are a senior full-stack developer. I already have a working Inventory & Billing Management Software. I need you to UPGRADE it by adding a complete Employee & Attendance Management System into the SAME app. Do NOT rebuild from scratch — just add the new modules below.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+COMPANY INFO (use this throughout the app)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Company Name: CARROZA
+Logo: Display "CARROZA" with a car silhouette icon above the sidebar and on the login screen. Use a premium dark theme (dark navy/charcoal sidebar, white content area). Style it like a luxury automotive brand software.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE A: LOGIN SYSTEM (Role-Based Access)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Create a Login Screen that appears before anything else.
+
+TWO ROLES:
+
+1. ADMIN LOGIN
+   - Username: admin
+   - Password: [set by admin, stored in localStorage, default: admin123]
+   - Admin can access: ALL modules (Inventory, Billing, Employees, Attendance, Reports)
+   - Admin can: add/edit/delete employees, edit any attendance record, view all reports, change own password
+   - Admin password is NEVER shown anywhere in the UI — not in employee list, not in settings
+
+2. EMPLOYEE LOGIN
+   - Each employee logs in with their Employee ID (e.g., ZUA01) and a password
+   - Default password for all employees: 123456 (admin can change it)
+   - After employee login, they can ONLY see:
+     * Their own Time-In / Time-Out panel
+     * Their own attendance history
+     * Nothing else (no billing, no stock, no other employees)
+
+FORGOT PASSWORD:
+   - Employee sees "Forgot Password?" on login screen
+   - Clicking it shows a message: "Please contact your Admin to reset your password."
+   - NO email/SMS reset — only admin can reset from admin panel
+   - Admin password reset: also shows "Contact system owner" — never auto-reset
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE B: EMPLOYEE MANAGEMENT (Admin Only)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pre-load these 6 employees (admin can add more):
+
+| Name                    | ID    | Department  | Designation        |
+|-------------------------|-------|-------------|-------------------|
+| ZainUl Abedin           | ZUA01 | IT          | CSR & IT Executive|
+| Syed Ali Naqi Mashadi   | SAN02 | Finance     | Account Manager   |
+| Salman Lashari          | SL03  | Operations  | Prep Incharge     |
+| Khan                    | K04   | Operations  | Prep Master       |
+| Zain Bhatti             | ZB05  | Sales       | Merchandiser      |
+| Azeem                   | AZ06  | Sales       | Sales Man         |
+
+Each employee record has:
+- Name, Employee ID (auto-generated), Department, Designation
+- Login Password (admin sets/resets, NEVER displayed — show ••••••)
+- Status: Active / Inactive
+- Avatar circle with initials (like the screenshot)
+
+Admin can: Add new employee, Edit details, Reset password, Deactivate
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODULE C: ATTENDANCE SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EMPLOYEE VIEW (after employee logs in):
+- Big panel showing today's date
+- "TIME IN" button (green) — records current time
+- "TIME OUT" button (red) — records current time, only active after time-in
+- Status badge shows: On Time / Late / Half Day based on rules below
+- Their attendance history table (last 30 days)
+
+ATTENDANCE RULES (apply automatically):
+- Before 10:30 AM → ON TIME (status: Present)
+- 10:30 AM to 10:59 AM → LATE (status: Late — shown in amber/orange)
+- 11:00 AM or later → HALF DAY (status: Half Day — shown in red)
+- Time Out: 7:00 PM is standard. If employee times out before 7:00 PM, flag it as "Early Exit"
+- If no time-out recorded by end of day → flag as "Missing Timeout"
+
+ADMIN ATTENDANCE VIEW:
+- See ALL employees' attendance in one table
+- Filter by: Employee Name, Date Range, Status (Present/Late/Half Day/Absent)
+- Edit any record: change Time In, Time Out, Status, add Note
+- Mark employees as Absent manually
+- Export attendance as CSV
+
+ATTENDANCE SUMMARY per employee:
+- Total Present, Total Late, Total Half Days, Total Absent (in selected month)
+- Monthly overview calendar heatmap style
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TECH REQUIREMENTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- React + Tailwind CSS (single .jsx file)
+- All data in localStorage (employees, attendance, auth sessions)
+- Session management: store logged-in user in sessionStorage (clears on browser close)
+- Responsive design
+- Toast notifications for all actions
+- Confirmation dialogs for delete/deactivate
+- CARROZA logo/branding on login screen and sidebar
+- Dark navy sidebar (#0f172a), white content area
+- Premium automotive-inspired UI (clean, sharp, professional)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPORTANT NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. Admin password must NEVER appear anywhere in the UI
+2. Employees can ONLY access their own attendance — nothing else
+3. Time-in/out uses real browser time (new Date())
+4. Forgot password always redirects to admin — no self-service reset
+5. Keep all existing Inventory/Billing/Stock modules fully intact
+6. Add "Employees" and "Attendance" to the admin sidebar navigation
+
+Build this completely. All buttons must work. No placeholder functions.

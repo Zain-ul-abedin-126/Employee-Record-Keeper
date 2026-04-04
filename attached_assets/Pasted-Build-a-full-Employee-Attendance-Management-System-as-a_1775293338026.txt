@@ -1,0 +1,71 @@
+Build a full Employee Attendance Management System as a web app using HTML, CSS, and vanilla JavaScript (single index.html file). No backend needed — use localStorage for data persistence.
+
+---
+
+## FEATURES REQUIRED:
+
+### 1. EMPLOYEE SELF CHECK-IN / CHECK-OUT KIOSK
+- A big kiosk-style screen where employee enters their Employee ID or selects their name
+- "Time In" button — records exact date + time when clicked
+- "Time Out" button — records exact date + time when clicked
+- Show a welcome message with employee name after Time In
+- Show total hours worked after Time Out
+- Prevent double Time In (if already checked in, only show Time Out)
+
+### 2. ADMIN PANEL (password protected — default password: admin123)
+- View all employees list
+- Add new employee (Name, Department, Designation, Employee ID)
+- Delete employee
+- Edit employee info
+
+### 3. ATTENDANCE RECORDS TABLE
+- Show full log: Employee Name | Date | Time In | Time Out | Total Hours | Status
+- Status auto-calculated:
+  - Present = checked in before 9:15 AM
+  - Late = checked in after 9:15 AM
+  - Absent = no check-in for that day
+- Filter by: Date, Employee Name, Department, Status
+- Export to CSV button
+
+### 4. DASHBOARD (Admin view)
+- Today's summary cards: Total Employees, Present Today, Absent Today, Late Today
+- Live clock showing current time
+- List of who is currently "IN" the office right now
+
+### 5. MONTHLY REPORT
+- Calendar-style or table view showing each employee's attendance for the whole month
+- Color coding: Green = Present, Red = Absent, Yellow = Late, Gray = Weekend/Holiday
+
+---
+
+## DESIGN REQUIREMENTS:
+- Clean, professional, modern UI
+- Mobile responsive
+- Use a sidebar navigation: Kiosk | Dashboard | Employees | Attendance Log | Reports
+- Color theme: White background, dark sidebar (#1e293b), accent color blue (#3b82f6)
+- Use Google Fonts (Inter)
+- All text in English but keep it simple and clear
+
+---
+
+## TECHNICAL REQUIREMENTS:
+- Single index.html file (embed all CSS and JS inside)
+- Use localStorage to save all data permanently
+- Auto-generate sample data with 5 demo employees on first load
+- Live clock that updates every second
+- All times stored in 12-hour format (e.g., 9:30 AM)
+- Date format: DD/MM/YYYY
+
+---
+
+## SAMPLE DEMO DATA (auto-load on first run):
+Employees:
+1. Ali Hassan — HR — Manager — EMP001
+2. Sara Khan — Finance — Accountant — EMP002
+3. Usman Malik — IT — Developer — EMP003
+4. Ayesha Raza — Admin — Coordinator — EMP004
+5. Bilal Ahmed — Sales — Executive — EMP005
+
+---
+
+Start with the Kiosk screen as the default/home screen. Make sure Time In and Time Out works perfectly and saves to localStorage immediately.

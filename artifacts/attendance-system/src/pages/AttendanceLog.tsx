@@ -1,17 +1,17 @@
 import { useState, useMemo } from "react";
-import { getAttendance, getEmployees, exportToCSV, updateAttendanceRecord, saveAttendance, AttendanceRecord, Employee, calcAttendanceStatus, calcEarlyExitFlag, calcHoursDiff } from "@/lib/storage";
+import { getAttendance, getEmployees, exportToCSV, updateAttendanceRecord, AttendanceRecord, Employee, calcAttendanceStatus, calcEarlyExitFlag, calcHoursDiff } from "@/lib/storage";
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === "present") return <span className="bg-green-500/20 border border-green-500/30 text-green-300 text-xs px-2 py-0.5 rounded-full">On Time</span>;
-  if (status === "late") return <span className="bg-amber-500/20 border border-amber-500/30 text-amber-300 text-xs px-2 py-0.5 rounded-full">Late</span>;
-  if (status === "halfDay") return <span className="bg-red-500/20 border border-red-500/30 text-red-300 text-xs px-2 py-0.5 rounded-full">Half Day</span>;
-  if (status === "absent") return <span className="bg-slate-500/20 border border-slate-500/30 text-slate-400 text-xs px-2 py-0.5 rounded-full">Absent</span>;
+  if (status === "present") return <span className="bg-green-500/15 border border-green-500/25 text-green-400 text-xs px-2 py-0.5 rounded-full">On Time</span>;
+  if (status === "late") return <span className="bg-amber-500/15 border border-amber-500/25 text-amber-400 text-xs px-2 py-0.5 rounded-full">Late</span>;
+  if (status === "halfDay") return <span className="bg-red-500/15 border border-red-500/25 text-red-400 text-xs px-2 py-0.5 rounded-full">Half Day</span>;
+  if (status === "absent") return <span className="bg-zinc-700/40 border border-zinc-700 text-zinc-500 text-xs px-2 py-0.5 rounded-full">Absent</span>;
   return null;
 }
 
 function FlagBadge({ flag }: { flag?: string | null }) {
-  if (flag === "earlyExit") return <span className="bg-orange-500/20 border border-orange-500/30 text-orange-300 text-xs px-1.5 py-0.5 rounded-full">Early Exit</span>;
-  if (flag === "missingTimeout") return <span className="bg-red-400/20 border border-red-400/30 text-red-300 text-xs px-1.5 py-0.5 rounded-full">Missing T/O</span>;
+  if (flag === "earlyExit") return <span className="bg-orange-500/15 border border-orange-500/25 text-orange-400 text-xs px-1.5 py-0.5 rounded-full">Early Exit</span>;
+  if (flag === "missingTimeout") return <span className="bg-red-400/15 border border-red-400/25 text-red-400 text-xs px-1.5 py-0.5 rounded-full">Missing T/O</span>;
   return null;
 }
 
@@ -46,25 +46,25 @@ function EditModal({ record, employee, onSave, onCancel }: EditModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 w-full max-w-md shadow-2xl">
         <h3 className="text-white font-bold text-lg mb-1">Edit Attendance Record</h3>
-        <p className="text-slate-400 text-sm mb-5">{employee?.name} · {record.date}</p>
+        <p className="text-zinc-500 text-sm mb-5">{employee?.name} · {record.date}</p>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-400 text-xs font-medium mb-1">Time In (e.g. 9:30 AM)</label>
-              <input type="text" value={form.timeIn} onChange={(e) => setForm({ ...form, timeIn: e.target.value })} placeholder="9:00 AM" className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+              <label className="block text-zinc-500 text-xs font-medium mb-1">Time In (e.g. 9:30 AM)</label>
+              <input type="text" value={form.timeIn} onChange={(e) => setForm({ ...form, timeIn: e.target.value })} placeholder="9:00 AM" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 placeholder-zinc-600" />
             </div>
             <div>
-              <label className="block text-slate-400 text-xs font-medium mb-1">Time Out (e.g. 7:00 PM)</label>
-              <input type="text" value={form.timeOut} onChange={(e) => setForm({ ...form, timeOut: e.target.value })} placeholder="7:00 PM" className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+              <label className="block text-zinc-500 text-xs font-medium mb-1">Time Out (e.g. 7:00 PM)</label>
+              <input type="text" value={form.timeOut} onChange={(e) => setForm({ ...form, timeOut: e.target.value })} placeholder="7:00 PM" className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 placeholder-zinc-600" />
             </div>
           </div>
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1">Override Status</label>
-            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as AttendanceRecord["status"] })} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <label className="block text-zinc-500 text-xs font-medium mb-1">Override Status</label>
+            <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as AttendanceRecord["status"] })} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500">
               <option value="present">On Time (Present)</option>
               <option value="late">Late</option>
               <option value="halfDay">Half Day</option>
@@ -72,14 +72,14 @@ function EditModal({ record, employee, onSave, onCancel }: EditModalProps) {
             </select>
           </div>
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1">Admin Note</label>
-            <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Optional note..." className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-500" />
+            <label className="block text-zinc-500 text-xs font-medium mb-1">Admin Note</label>
+            <input type="text" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder="Optional note..." className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-zinc-500 placeholder-zinc-600" />
           </div>
         </div>
 
         <div className="flex gap-3 mt-6">
-          <button onClick={onCancel} className="flex-1 py-2.5 border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg text-sm font-medium transition-colors">Cancel</button>
-          <button onClick={handleSave} className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-bold transition-colors">Save Changes</button>
+          <button onClick={onCancel} className="flex-1 py-2.5 border border-zinc-700 text-zinc-400 hover:bg-zinc-800 rounded-lg text-sm font-medium transition-colors">Cancel</button>
+          <button onClick={handleSave} className="flex-1 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg text-sm font-bold transition-colors">Save Changes</button>
         </div>
       </div>
     </div>
@@ -148,7 +148,7 @@ export function AttendanceLog() {
   return (
     <div className="p-6 space-y-6">
       {toast && (
-        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl text-white text-sm font-medium shadow-lg ${toast.type === "success" ? "bg-green-600" : "bg-red-600"}`}>
+        <div className={`fixed top-4 right-4 z-50 px-5 py-3 rounded-xl text-white text-sm font-medium shadow-lg ${toast.type === "success" ? "bg-green-700" : "bg-red-700"}`}>
           {toast.msg}
         </div>
       )}
@@ -165,12 +165,12 @@ export function AttendanceLog() {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Attendance Log</h1>
-          <p className="text-slate-400 text-sm mt-0.5">{filtered.length} records</p>
+          <p className="text-zinc-500 text-sm mt-0.5">{filtered.length} records</p>
         </div>
         <div className="flex gap-3">
           <button
             onClick={() => exportToCSV(filtered, employees)}
-            className="px-4 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-lg font-semibold text-sm transition-colors"
+            className="px-4 py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-semibold text-sm transition-colors"
           >
             Export CSV
           </button>
@@ -178,37 +178,37 @@ export function AttendanceLog() {
       </div>
 
       {/* Filters */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1.5">Date</label>
-            <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <label className="block text-zinc-500 text-xs font-medium mb-1.5">Date</label>
+            <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm" />
           </div>
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1.5">Employee</label>
-            <select value={filterEmployee} onChange={(e) => setFilterEmployee(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <label className="block text-zinc-500 text-xs font-medium mb-1.5">Employee</label>
+            <select value={filterEmployee} onChange={(e) => setFilterEmployee(e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm">
               <option value="All">All Employees</option>
               {employees.map((e) => <option key={e.id} value={e.employeeId}>{e.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-slate-400 text-xs font-medium mb-1.5">Status</label>
-            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <label className="block text-zinc-500 text-xs font-medium mb-1.5">Status</label>
+            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm">
               {STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
             </select>
           </div>
           <div className="flex items-end">
-            <button onClick={() => { setFilterDate(""); setFilterEmployee("All"); setFilterStatus("All"); }} className="w-full py-2 border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg text-sm transition-colors">Clear Filters</button>
+            <button onClick={() => { setFilterDate(""); setFilterEmployee("All"); setFilterStatus("All"); }} className="w-full py-2 border border-zinc-700 text-zinc-400 hover:bg-zinc-800 rounded-lg text-sm transition-colors">Clear Filters</button>
           </div>
         </div>
       </div>
 
       {/* Mark Absent */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-        <h3 className="text-slate-300 text-sm font-semibold mb-3">Mark Absent Today</h3>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+        <h3 className="text-zinc-400 text-sm font-semibold mb-3">Mark Absent Today</h3>
         <div className="flex flex-wrap gap-2">
           {employees.filter((e) => e.status === "active").map((emp) => (
-            <button key={emp.id} onClick={() => handleMarkAbsent(emp.employeeId)} className="px-3 py-1.5 border border-red-500/30 text-red-400 hover:bg-red-500/10 rounded-lg text-xs transition-colors">
+            <button key={emp.id} onClick={() => handleMarkAbsent(emp.employeeId)} className="px-3 py-1.5 border border-red-500/25 text-red-500 hover:bg-red-500/10 rounded-lg text-xs transition-colors">
               {emp.name} ({emp.employeeId})
             </button>
           ))}
@@ -216,11 +216,11 @@ export function AttendanceLog() {
       </div>
 
       {/* Table */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-slate-700/30 text-slate-400 text-xs">
+              <tr className="bg-zinc-800/60 text-zinc-500 text-xs">
                 <th className="px-4 py-3 text-left font-medium">Employee</th>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-left font-medium">Time In</th>
@@ -232,34 +232,34 @@ export function AttendanceLog() {
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-700/50">
+            <tbody className="divide-y divide-zinc-800/60">
               {filtered.length === 0 ? (
-                <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-500">No records found</td></tr>
+                <tr><td colSpan={9} className="px-4 py-12 text-center text-zinc-600">No records found</td></tr>
               ) : (
                 filtered.map((record) => {
                   const emp = employees.find((e) => e.employeeId === record.employeeId);
                   return (
-                    <tr key={record.id} className="hover:bg-slate-700/20 transition-colors">
+                    <tr key={record.id} className="hover:bg-zinc-800/30 transition-colors">
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
+                          <div className="w-7 h-7 rounded-full bg-zinc-700 flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
                             {emp?.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
                           </div>
                           <div>
                             <div className="text-white text-xs font-medium">{emp?.name || "Unknown"}</div>
-                            <div className="text-slate-500 text-xs">{record.employeeId}</div>
+                            <div className="text-zinc-600 text-xs">{record.employeeId}</div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{record.date}</td>
-                      <td className="px-4 py-3 text-white text-sm">{record.timeIn || <span className="text-slate-500">-</span>}</td>
-                      <td className="px-4 py-3 text-white text-sm">{record.timeOut || <span className="text-slate-500">-</span>}</td>
-                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{record.totalHours !== null ? `${record.totalHours.toFixed(1)}h` : "-"}</td>
+                      <td className="px-4 py-3 text-zinc-400 font-mono text-xs">{record.date}</td>
+                      <td className="px-4 py-3 text-white text-sm">{record.timeIn || <span className="text-zinc-600">-</span>}</td>
+                      <td className="px-4 py-3 text-white text-sm">{record.timeOut || <span className="text-zinc-600">-</span>}</td>
+                      <td className="px-4 py-3 text-zinc-400 font-mono text-xs">{record.totalHours !== null ? `${record.totalHours.toFixed(1)}h` : "-"}</td>
                       <td className="px-4 py-3"><StatusBadge status={record.status} /></td>
                       <td className="px-4 py-3"><FlagBadge flag={record.flag} /></td>
-                      <td className="px-4 py-3 text-slate-500 text-xs max-w-[120px] truncate">{record.note || "-"}</td>
+                      <td className="px-4 py-3 text-zinc-600 text-xs max-w-[120px] truncate">{record.note || "-"}</td>
                       <td className="px-4 py-3 text-right">
-                        <button onClick={() => setEditingRecord(record)} className="px-2.5 py-1 border border-slate-600 text-slate-300 hover:bg-slate-700 text-xs rounded-lg transition-colors">Edit</button>
+                        <button onClick={() => setEditingRecord(record)} className="px-2.5 py-1 border border-zinc-700 text-zinc-400 hover:bg-zinc-800 text-xs rounded-lg transition-colors">Edit</button>
                       </td>
                     </tr>
                   );

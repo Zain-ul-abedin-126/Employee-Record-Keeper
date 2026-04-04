@@ -22,8 +22,8 @@ function CarrozaLogo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
   const width = size === "sm" ? 110 : size === "md" ? 150 : 200;
   return (
     <div className="flex flex-col items-start">
-      <img src={carrozaLogo} alt="CARROZA" style={{ width, filter: "brightness(1.1) drop-shadow(0 0 4px rgba(96,165,250,0.25))" }} className="object-contain" />
-      {size !== "sm" && <div className="text-blue-400 text-[9px] tracking-[0.25em] uppercase mt-0.5 pl-0.5">Attendance Management</div>}
+      <img src={carrozaLogo} alt="CARROZA" style={{ width, filter: "brightness(1.1) drop-shadow(0 0 4px rgba(200,200,200,0.15))" }} className="object-contain" />
+      {size !== "sm" && <div className="text-zinc-500 text-[9px] tracking-[0.25em] uppercase mt-0.5 pl-0.5">Attendance Management</div>}
     </div>
   );
 }
@@ -48,26 +48,26 @@ function AdminSettings() {
   return (
     <div className="p-6 max-w-lg">
       <h1 className="text-2xl font-bold text-white mb-1">Settings</h1>
-      <p className="text-slate-400 text-sm mb-6">Manage admin password</p>
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+      <p className="text-zinc-500 text-sm mb-6">Manage admin password</p>
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
         <h2 className="text-white font-bold text-lg mb-4">Change Admin Password</h2>
         {msg && <div className={`mb-4 p-3 rounded-lg text-sm ${msg.type === "success" ? "bg-green-500/15 border border-green-500/30 text-green-300" : "bg-red-500/15 border border-red-500/30 text-red-300"}`}>{msg.text}</div>}
         <form onSubmit={handleChange} className="space-y-4">
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">Current Password</label>
-            <input type="password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <label className="block text-zinc-400 text-sm font-medium mb-1.5">Current Password</label>
+            <input type="password" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm" />
           </div>
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">New Password</label>
-            <input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Min. 6 characters" className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm placeholder-slate-500" />
+            <label className="block text-zinc-400 text-sm font-medium mb-1.5">New Password</label>
+            <input type="password" value={newPwd} onChange={(e) => setNewPwd(e.target.value)} placeholder="Min. 6 characters" className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm placeholder-zinc-600" />
           </div>
           <div>
-            <label className="block text-slate-300 text-sm font-medium mb-1.5">Confirm New Password</label>
-            <input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} className="w-full px-3 py-2.5 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" />
+            <label className="block text-zinc-400 text-sm font-medium mb-1.5">Confirm New Password</label>
+            <input type="password" value={confirmPwd} onChange={(e) => setConfirmPwd(e.target.value)} className="w-full px-3 py-2.5 bg-zinc-800 border border-zinc-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 text-sm" />
           </div>
-          <button type="submit" className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-semibold text-sm transition-colors">Update Password</button>
+          <button type="submit" className="w-full py-2.5 bg-zinc-700 hover:bg-zinc-600 text-white rounded-lg font-semibold text-sm transition-colors">Update Password</button>
         </form>
-        <div className="mt-4 pt-4 border-t border-slate-700 text-slate-500 text-xs">
+        <div className="mt-4 pt-4 border-t border-zinc-800 text-zinc-600 text-xs">
           Admin password is never displayed anywhere in the system.
         </div>
       </div>
@@ -80,10 +80,10 @@ function AdminLayout({ onLogout }: { onLogout: () => void }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-[#0a0f1e]">
+    <div className="flex min-h-screen bg-black">
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] border-r border-slate-700/60 flex flex-col transform transition-transform duration-200 lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-5 border-b border-slate-700/60">
+      <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#111111] border-r border-zinc-800 flex flex-col transform transition-transform duration-200 lg:relative lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-5 border-b border-zinc-800">
           <CarrozaLogo size="sm" />
           <div className="mt-3 px-1">
             <span className="text-xs text-amber-400 bg-amber-500/15 border border-amber-500/25 px-2 py-0.5 rounded-full font-semibold">Admin Mode</span>
@@ -97,8 +97,8 @@ function AdminLayout({ onLogout }: { onLogout: () => void }) {
               onClick={() => { setCurrentPage(item.id); setSidebarOpen(false); }}
               className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left text-sm transition-all ${
                 currentPage === item.id
-                  ? "bg-blue-600 text-white font-semibold shadow-lg shadow-blue-600/20"
-                  : "text-slate-400 hover:text-white hover:bg-slate-700/60"
+                  ? "bg-zinc-700 text-white font-semibold"
+                  : "text-zinc-500 hover:text-white hover:bg-zinc-800"
               }`}
             >
               <span className="text-base">{item.icon}</span>
@@ -107,24 +107,24 @@ function AdminLayout({ onLogout }: { onLogout: () => void }) {
           ))}
         </nav>
 
-        <div className="p-4 border-t border-slate-700/60">
+        <div className="p-4 border-t border-zinc-800">
           <button
             onClick={onLogout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm"
+            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-colors text-sm"
           >
             <span>🚪</span>
             <span>Logout</span>
           </button>
-          <div className="text-slate-700 text-[10px] text-center mt-3">CARROZA v2.0 · Admin</div>
+          <div className="text-zinc-800 text-[10px] text-center mt-3">CARROZA v2.0 · Admin</div>
         </div>
       </aside>
 
-      {sidebarOpen && <div className="fixed inset-0 bg-black/70 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 bg-black/80 z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile header */}
-        <header className="sticky top-0 z-30 bg-[#0f172a] border-b border-slate-700/60 px-4 py-3 flex items-center gap-3 lg:hidden">
-          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors">
+        <header className="sticky top-0 z-30 bg-[#111111] border-b border-zinc-800 px-4 py-3 flex items-center gap-3 lg:hidden">
+          <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-zinc-500 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors">
             ☰
           </button>
           <CarrozaLogo size="sm" />
@@ -165,8 +165,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center">
-        <div className="text-slate-400 text-sm">Loading...</div>
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-zinc-500 text-sm">Loading...</div>
       </div>
     );
   }
